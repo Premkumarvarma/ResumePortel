@@ -3,7 +3,7 @@
  * Add your Supabase Project URL and publishable (anon) key below.
  * NEVER put a service_role / secret key in this file.
  */
-const SUPABASE_URL = "https://qejdevxzxdakstsxwscq.supabase.co";
+const SUPABASE_URL = "https://qejdevxzxdakstsxwscq.supabaseClient.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_2oF5fMOnLCW0j55nMiIfVQ_WK6ZBIrZ";
 const BUCKET = "candidate-resumes";
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
@@ -15,7 +15,7 @@ const configured = SUPABASE_URL.startsWith("https://") &&
   SUPABASE_PUBLISHABLE_KEY.length > 20 &&
   !SUPABASE_PUBLISHABLE_KEY.includes("YOUR_");
 
-let supabase = null;
+let supabaseClient = null;
 let currentUser = null;
 let teamId = null;
 let candidates = [];
@@ -134,7 +134,7 @@ async function login(event) {
   setBusy(btn, true, "Signing in…");
   message("loginMessage", "");
   try {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
       email: $("loginEmail").value.trim(),
       password: $("loginPassword").value
     });
@@ -163,7 +163,7 @@ async function addCandidate(event) {
   let uploadedPath = null;
   try {
     const path = `${teamId}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
-    const { error: uploadError } = await supabase.storage.from(BUCKET).upload(path, file, {
+    const { error: uploadError } = await supabaseClient.storage.from(BUCKET).upload(path, file, {
       cacheControl: "3600", upsert: false, contentType: file.type || undefined
     });
     if (uploadError) throw uploadError;
@@ -179,7 +179,7 @@ async function addCandidate(event) {
       file_path: path,
       created_by: currentUser.id
     };
-    const { error: insertError } = await supabase.from("candidates").insert(payload);
+    const { error: insertError } = await supabaseClient.from("candidates").insert(payload);
     if (insertError) throw insertError;
 
     $("candidateForm").reset();
@@ -187,7 +187,7 @@ async function addCandidate(event) {
     await loadCandidates();
   } catch (error) {
     if (uploadedPath) {
-      await supabase.storage.from(BUCKET).remove([uploadedPath]);
+      await supabaseClient.storage.from(BUCKET).remove([uploadedPath]);
     }
     message("formMessage", error.message || "Could not save candidate.", "error");
   } finally {
@@ -195,7 +195,7 @@ async function addCandidate(event) {
   }
 }
 async function downloadResume(candidate) {
-  const { data, error } = await supabase.storage.from(BUCKET).download(candidate.file_path);
+  const { data, error } = await supabaseClient.storage.from(BUCKET).download(candidate.file_path);
   if (error) throw error;
   const url = URL.createObjectURL(data);
   const a = document.createElement("a");
@@ -214,7 +214,7 @@ async function previewResume(candidate) {
     $("previewContent").innerHTML = '<p class="preview-note">In-browser preview is available for PDF files. Use the Download button for DOC or DOCX resumes.</p>';
     return;
   }
-  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(candidate.file_path, 120);
+  const { data, error } = await supabaseClient.storage.from(BUCKET).createSignedUrl(candidate.file_path, 120);
   if (error) {
     $("previewContent").innerHTML = `<p class="preview-note">${escapeHtml(error.message)}</p>`;
     return;
@@ -227,9 +227,9 @@ async function previewResume(candidate) {
 async function deleteCandidate(candidate) {
   if (!confirm(`Delete ${candidate.name} and their resume? This cannot be undone.`)) return;
   try {
-    const { error: rowError } = await supabase.from("candidates").delete().eq("id", candidate.id).eq("team_id", teamId);
+    const { error: rowError } = await supabaseClient.from("candidates").delete().eq("id", candidate.id).eq("team_id", teamId);
     if (rowError) throw rowError;
-    const { error: fileError } = await supabase.storage.from(BUCKET).remove([candidate.file_path]);
+    const { error: fileError } = await supabaseClient.storage.from(BUCKET).remove([candidate.file_path]);
     if (fileError) {
       alert(`Candidate record deleted, but the resume file could not be removed: ${fileError.message}`);
     }
@@ -269,7 +269,7 @@ function exportCsv() {
   URL.revokeObjectURL(url);
 }
 async function logout() {
-  await supabase.auth.signOut();
+  await supabaseClient.auth.signOut();
   showSignedOut();
 }
 function closePreview() { $("previewModal").hidden = true; $("previewContent").replaceChildren(); }
@@ -280,7 +280,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     $("loginBtn").disabled = true;
     return;
   }
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
   $("loginForm").addEventListener("submit", login);
   $("candidateForm").addEventListener("submit", addCandidate);
@@ -293,7 +293,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   $("previewModal").addEventListener("click", e => { if (e.target.hasAttribute("data-close-preview")) closePreview(); });
   document.addEventListener("keydown", e => { if (e.key === "Escape") closePreview(); });
 
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await supabaseClient.auth.getSession();
   if (session) {
     currentUser = session.user;
     try { await refreshApp(); }
@@ -302,7 +302,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       message("loginMessage", error.message || "Could not load your team.", "error");
     }
   }
-  supabase.auth.onAuthStateChange((event, sessionNow) => {
+  supabaseClient.auth.onAuthStateChange((event, sessionNow) => {
     if (event === "SIGNED_OUT" || !sessionNow) showSignedOut();
   });
 });
