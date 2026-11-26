@@ -1,9 +1,10 @@
 
 /*
  * ResumeVault - Supabase-connected frontend
- * Individual recruiter data isolation.
- * Uses Supabase Publishable Key.
- * NEVER put a service_role / secret key in this file.
+ * Self-service recruiter registration
+ * Individual recruiter candidate-data isolation
+ *
+ * Frontend must use ONLY the Supabase Publishable Key.
  */
 
 const SUPABASE_URL = "https://qejdevxzxdakstsxwscq.supabase.co";
@@ -13,7 +14,7 @@ const BUCKET = "candidate-resumes";
 const MAX_FILE_SIZE = 15 * 1024 * 1024;
 const ALLOWED_EXTENSIONS = ["pdf", "doc", "docx"];
 
-const $ = (id) => document.getElementById(id);
+const $ = id => document.getElementById(id);
 
 const configured =
     SUPABASE_URL.startsWith("https://") &&
@@ -23,6 +24,10 @@ let supabaseClient = null;
 let currentUser = null;
 let teamId = null;
 let candidates = [];
+
+// ==========================================
+// GENERAL HELPERS
+// ==========================================
 
 function message(id, text, type = "") {
     const el = $(id);
@@ -74,6 +79,22 @@ function setBusy(button, busy, label) {
     }
 }
 
+// ==========================================
+// LOGIN / REGISTRATION SCREEN
+// ==========================================
+
+function showLoginCard() {
+    $("loginCard").hidden = false;
+    $("signupPanel").hidden = true;
+    message("signupMessage", "");
+}
+
+function showSignupCard() {
+    $("loginCard").hidden = true;
+    $("signupPanel").hidden = false;
+    message("loginMessage", "");
+}
+
 function showSignedIn(user) {
     $("loginPanel").hidden = true;
     $("appShell").hidden = false;
@@ -89,10 +110,19 @@ function showSignedOut() {
     currentUser = null;
     teamId = null;
     candidates = [];
+
+    showLoginCard();
 }
 
-/* LOAD TEAM MEMBERSHIP */
+// ==========================================
+// PERSONAL WORKSPACE
+// ==========================================
+
 async function loadTeam() {
+    if (!currentUser) {
+        throw new Error("Please sign in to continue.");
+    }
+
     const { data, error } = await supabaseClient
         .from("team_members")
         .select("team_id, role")
@@ -101,17 +131,64 @@ async function loadTeam() {
 
     if (error) throw error;
 
-    if (!data || data.length === 0) {
+    if (data?.length && data[0].team_id) {
+        teamId = data[0].team_id;
+        return;
+    }
+
+    const fullName =
+        currentUser.user_metadata?.full_name || "My";
+
+    const { data: workspaceId, error: workspaceError } =
+        await supabaseClient.rpc("create_personal_workspace", {
+            p_name: `${fullName}'s Workspace`
+        });
+
+    if (workspaceError) {
         throw new Error(
-            "Your account is not assigned to a team yet. Ask your administrator to add your user to team_members."
+            "Workspace creation failed: " + workspaceError.message
         );
     }
 
-    teamId = data[0].team_id;
+    if (!workspaceId) {
+        throw new Error("Workspace creation did not return an ID.");
+    }
+
+    const { data: membership, error: membershipError } =
+        await supabaseClient
+            .from("team_members")
+            .select("team_id, role")
+            .eq("user_id", currentUser.id)
+            .limit(1);
+
+    if (membershipError) throw membershipError;
+
+    if (!membership?.length || !membership[0].team_id) {
+        throw new Error(
+            "Workspace was created, but membership could not be loaded. Check the team_members SELECT policy."
+        );
+    }
+
+    teamId = membership[0].team_id;
+
+    if (teamId !== workspaceId) {
+        console.warn(
+            "Workspace ID and membership ID differ. Check existing team memberships."
+        );
+    }
 }
 
-/* LOAD ONLY CURRENT RECRUITER'S CANDIDATES */
+// ==========================================
+// LOAD CURRENT USER'S CANDIDATES
+// ==========================================
+
 async function loadCandidates() {
+    if (!currentUser || !teamId) {
+        candidates = [];
+        render();
+        return;
+    }
+
     const { data, error } = await supabaseClient
         .from("candidates")
         .select(
@@ -127,7 +204,10 @@ async function loadCandidates() {
     render();
 }
 
-/* FILTER CANDIDATES */
+// ==========================================
+// FILTER CANDIDATES
+// ==========================================
+
 function filteredCandidates() {
     const term = $("searchInput").value.trim().toLowerCase();
     const domain = $("domainFilter").value;
@@ -145,8 +225,13 @@ function filteredCandidates() {
     });
 }
 
-/* DISPLAY CANDIDATES */
+// ==========================================
+// DISPLAY CANDIDATES
+// ==========================================
+
 function render() {
+    if (!$("candidateRows")) return;
+
     const rows = filteredCandidates();
 
     $("candidateRows").innerHTML = rows.map(c => `
@@ -213,16 +298,25 @@ function render() {
     }
 }
 
-/* REFRESH APPLICATION */
+// ==========================================
+// REFRESH APPLICATION
+// ==========================================
+
 async function refreshApp() {
+    if (!currentUser) {
+        throw new Error("No authenticated user found.");
+    }
+
     await loadTeam();
+    await loadCandidates();
 
     showSignedIn(currentUser);
-
-    await loadCandidates();
 }
 
-/* LOGIN */
+// ==========================================
+// LOGIN
+// ==========================================
+
 async function login(event) {
     event.preventDefault();
 
@@ -232,7 +326,6 @@ async function login(event) {
     }
 
     const btn = $("loginBtn");
-
     setBusy(btn, true, "Signing in…");
     message("loginMessage", "");
 
@@ -252,73 +345,187 @@ async function login(event) {
         message("loginMessage", "");
 
     } catch (error) {
+        console.error("Login error:", error);
+        showSignedOut();
+
         message(
             "loginMessage",
             error.message || "Unable to sign in.",
             "error"
         );
 
-        if (currentUser && !teamId) {
-            showSignedOut();
+    } finally {
+        setBusy(btn, false);
+    }
+}
+
+// ==========================================
+// NEW USER REGISTRATION
+// ==========================================
+
+async function registerUser(event) {
+    event.preventDefault();
+
+    if (!configured || !supabaseClient) {
+        message("signupMessage", "Supabase is not configured.", "error");
+        return;
+    }
+
+    const fullName = $("signupName").value.trim();
+    const email = $("signupEmail").value.trim();
+    const password = $("signupPassword").value;
+    const confirmPassword = $("signupConfirmPassword").value;
+
+    const btn = $("signupBtn");
+
+    message("signupMessage", "");
+
+    if (!fullName) {
+        message("signupMessage", "Please enter your full name.", "error");
+        return;
+    }
+
+    if (password.length < 8) {
+        message("signupMessage", "Password must contain at least 8 characters.", "error");
+        return;
+    }
+
+    if (password !== confirmPassword) {
+        message("signupMessage", "Passwords do not match.", "error");
+        return;
+    }
+
+    setBusy(btn, true, "Creating account…");
+
+    try {
+        const { data, error } =
+            await supabaseClient.auth.signUp({
+                email,
+                password,
+                options: {
+                    data: {
+                        full_name: fullName
+                    }
+                }
+            });
+
+        if (error) throw error;
+
+        if (!data.user) {
+            throw new Error("Account creation was unsuccessful.");
         }
+
+        if (!data.session) {
+            message(
+                "signupMessage",
+                "Account created. Please verify your email and then sign in.",
+                "error"
+            );
+            return;
+        }
+
+        // IMPORTANT: Verify the authenticated user before the RPC.
+        const {
+            data: authCheck,
+            error: authCheckError
+        } = await supabaseClient.auth.getUser();
+
+        if (authCheckError) throw authCheckError;
+
+        console.log("Registration user ID:", data.user.id);
+        console.log("Authenticated user ID:", authCheck?.user?.id);
+
+        if (!authCheck?.user?.id) {
+            throw new Error(
+                "No authenticated session found. Please sign in again."
+            );
+        }
+
+        if (data.user.id !== authCheck.user.id) {
+            throw new Error(
+                "The newly registered account does not match the active login. Please sign out and register again."
+            );
+        }
+
+        currentUser = authCheck.user;
+
+        // Create this recruiter's workspace.
+        const { data: workspaceId, error: workspaceError } =
+            await supabaseClient.rpc(
+                "create_personal_workspace",
+                {
+                    p_name: `${fullName}'s Workspace`
+                }
+            );
+
+        if (workspaceError) {
+            throw new Error(
+                "Workspace creation failed: " + workspaceError.message
+            );
+        }
+
+        if (!workspaceId) {
+            throw new Error("Personal workspace was not created.");
+        }
+
+        await refreshApp();
+
+        $("signupForm").reset();
+
+        message(
+            "signupMessage",
+            "Account and personal workspace created successfully!",
+            "success"
+        );
+
+    } catch (error) {
+        console.error("Registration error:", error);
+
+        message(
+            "signupMessage",
+            error.message || "Unable to create account.",
+            "error"
+        );
 
     } finally {
         setBusy(btn, false);
     }
 }
 
-/* ADD CANDIDATE - PRIVATE RECRUITER FOLDER */
+// ==========================================
+// ADD CANDIDATE
+// ==========================================
+
 async function addCandidate(event) {
     event.preventDefault();
 
     if (!currentUser || !teamId) {
-        return message(
-            "formMessage",
-            "Please sign in before adding a candidate.",
-            "error"
-        );
+        return message("formMessage", "Please sign in first.", "error");
     }
 
     const btn = $("saveBtn");
     const file = $("resumeFile").files[0];
 
     if (!file) {
-        return message(
-            "formMessage",
-            "Please choose a resume file.",
-            "error"
-        );
+        return message("formMessage", "Please choose a resume file.", "error");
     }
 
     const ext = fileExtension(file.name);
 
     if (!ALLOWED_EXTENSIONS.includes(ext)) {
-        return message(
-            "formMessage",
-            "Only PDF, DOC and DOCX files are allowed.",
-            "error"
-        );
+        return message("formMessage", "Only PDF, DOC and DOCX files are allowed.", "error");
     }
 
     if (file.size > MAX_FILE_SIZE) {
-        return message(
-            "formMessage",
-            "File is larger than 15 MB.",
-            "error"
-        );
+        return message("formMessage", "File is larger than 15 MB.", "error");
     }
 
     setBusy(btn, true, "Uploading…");
-
-    message(
-        "formMessage",
-        "Uploading resume and saving candidate…"
-    );
+    message("formMessage", "Uploading resume and saving candidate…");
 
     let uploadedPath = null;
 
     try {
-        // Each recruiter gets a separate Storage folder.
         const path =
             `${teamId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
@@ -355,19 +562,20 @@ async function addCandidate(event) {
 
         $("candidateForm").reset();
 
-        message(
-            "formMessage",
-            "Candidate saved successfully.",
-            "success"
-        );
+        message("formMessage", "Candidate saved successfully.", "success");
 
         await loadCandidates();
 
     } catch (error) {
         if (uploadedPath) {
-            await supabaseClient.storage
-                .from(BUCKET)
-                .remove([uploadedPath]);
+            const { error: cleanupError } =
+                await supabaseClient.storage
+                    .from(BUCKET)
+                    .remove([uploadedPath]);
+
+            if (cleanupError) {
+                console.error("File cleanup error:", cleanupError);
+            }
         }
 
         message(
@@ -381,7 +589,10 @@ async function addCandidate(event) {
     }
 }
 
-/* DOWNLOAD RESUME */
+// ==========================================
+// DOWNLOAD RESUME
+// ==========================================
+
 async function downloadResume(candidate) {
     const { data, error } =
         await supabaseClient.storage
@@ -391,8 +602,8 @@ async function downloadResume(candidate) {
     if (error) throw error;
 
     const url = URL.createObjectURL(data);
-
     const a = document.createElement("a");
+
     a.href = url;
     a.download = candidate.file_name;
 
@@ -403,7 +614,10 @@ async function downloadResume(candidate) {
     setTimeout(() => URL.revokeObjectURL(url), 30000);
 }
 
-/* PREVIEW RESUME */
+// ==========================================
+// PREVIEW RESUME
+// ==========================================
+
 async function previewResume(candidate) {
     $("previewTitle").textContent =
         `Resume preview — ${candidate.name}`;
@@ -415,8 +629,7 @@ async function previewResume(candidate) {
 
     if (fileExtension(candidate.file_name) !== "pdf") {
         $("previewContent").innerHTML =
-            '<p class="preview-note">In-browser preview is available for PDF files. Use the Download button for DOC or DOCX resumes.</p>';
-
+            '<p class="preview-note">Preview is available for PDF files. Download DOC or DOCX resumes.</p>';
         return;
     }
 
@@ -428,19 +641,20 @@ async function previewResume(candidate) {
     if (error) {
         $("previewContent").innerHTML =
             `<p class="preview-note">${escapeHtml(error.message)}</p>`;
-
         return;
     }
 
     const frame = document.createElement("iframe");
-
     frame.title = `Resume for ${candidate.name}`;
     frame.src = data.signedUrl;
 
     $("previewContent").replaceChildren(frame);
 }
 
-/* DELETE CANDIDATE */
+// ==========================================
+// DELETE CANDIDATE
+// ==========================================
+
 async function deleteCandidate(candidate) {
     if (!confirm(
         `Delete ${candidate.name} and their resume? This cannot be undone.`
@@ -449,7 +663,13 @@ async function deleteCandidate(candidate) {
     }
 
     try {
-        // Database RLS also restricts deletion to the current user.
+        const { error: fileError } =
+            await supabaseClient.storage
+                .from(BUCKET)
+                .remove([candidate.file_path]);
+
+        if (fileError) throw fileError;
+
         const { error: rowError } =
             await supabaseClient
                 .from("candidates")
@@ -460,17 +680,6 @@ async function deleteCandidate(candidate) {
 
         if (rowError) throw rowError;
 
-        const { error: fileError } =
-            await supabaseClient.storage
-                .from(BUCKET)
-                .remove([candidate.file_path]);
-
-        if (fileError) {
-            alert(
-                `Candidate record deleted, but the resume file could not be removed: ${fileError.message}`
-            );
-        }
-
         await loadCandidates();
 
     } catch (error) {
@@ -478,7 +687,10 @@ async function deleteCandidate(candidate) {
     }
 }
 
-/* TABLE ACTIONS */
+// ==========================================
+// TABLE ACTIONS
+// ==========================================
+
 async function handleTableAction(event) {
     const button = event.target.closest("button[data-action]");
 
@@ -493,13 +705,9 @@ async function handleTableAction(event) {
     try {
         if (button.dataset.action === "view") {
             await previewResume(candidate);
-        }
-
-        if (button.dataset.action === "download") {
+        } else if (button.dataset.action === "download") {
             await downloadResume(candidate);
-        }
-
-        if (button.dataset.action === "delete") {
+        } else if (button.dataset.action === "delete") {
             await deleteCandidate(candidate);
         }
 
@@ -508,7 +716,10 @@ async function handleTableAction(event) {
     }
 }
 
-/* CSV EXPORT */
+// ==========================================
+// CSV EXPORT
+// ==========================================
+
 function csvCell(value) {
     let s = String(value ?? "");
 
@@ -523,12 +734,8 @@ function exportCsv() {
     const rows = filteredCandidates();
 
     const headers = [
-        "Name",
-        "Domain",
-        "Experience",
-        "Location",
-        "Resume",
-        "Added"
+        "Name", "Domain", "Experience",
+        "Location", "Resume", "Added"
     ];
 
     const lines = [
@@ -541,9 +748,7 @@ function exportCsv() {
             c.file_name,
             c.created_at
         ])
-    ]
-        .map(row => row.map(csvCell).join(","))
-        .join("\r\n");
+    ].map(row => row.map(csvCell).join(",")).join("\r\n");
 
     const blob = new Blob(
         ["\uFEFF" + lines],
@@ -551,8 +756,8 @@ function exportCsv() {
     );
 
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement("a");
+
     a.href = url;
     a.download = "resume-vault-candidates.csv";
     a.click();
@@ -560,24 +765,40 @@ function exportCsv() {
     URL.revokeObjectURL(url);
 }
 
-/* LOGOUT */
+// ==========================================
+// LOGOUT
+// ==========================================
+
 async function logout() {
-    await supabaseClient.auth.signOut();
+    const { error } = await supabaseClient.auth.signOut();
+
+    if (error) {
+        alert(error.message);
+        return;
+    }
+
     showSignedOut();
 }
 
-/* CLOSE PREVIEW */
+// ==========================================
+// CLOSE PREVIEW
+// ==========================================
+
 function closePreview() {
     $("previewModal").hidden = true;
     $("previewContent").replaceChildren();
 }
 
-/* INITIALIZE APPLICATION */
+// ==========================================
+// INITIALIZE APPLICATION
+// ==========================================
+
 document.addEventListener("DOMContentLoaded", async () => {
 
     if (!configured || !window.supabase?.createClient) {
         $("setupNotice").hidden = false;
         $("loginBtn").disabled = true;
+        $("signupBtn").disabled = true;
         return;
     }
 
@@ -587,26 +808,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
 
     $("loginForm").addEventListener("submit", login);
+    $("signupForm").addEventListener("submit", registerUser);
+
+    $("showSignupBtn").addEventListener("click", showSignupCard);
+    $("showLoginBtn").addEventListener("click", showLoginCard);
 
     $("candidateForm").addEventListener("submit", addCandidate);
-
     $("searchInput").addEventListener("input", render);
-
     $("domainFilter").addEventListener("change", render);
 
-    $("candidateRows").addEventListener(
-        "click",
-        handleTableAction
-    );
-
+    $("candidateRows").addEventListener("click", handleTableAction);
     $("exportBtn").addEventListener("click", exportCsv);
-
     $("logoutBtn").addEventListener("click", logout);
 
-    $("closePreview").addEventListener(
-        "click",
-        closePreview
-    );
+    $("closePreview").addEventListener("click", closePreview);
 
     $("previewModal").addEventListener("click", e => {
         if (e.target.hasAttribute("data-close-preview")) {
@@ -615,9 +830,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     document.addEventListener("keydown", e => {
-        if (e.key === "Escape") {
-            closePreview();
-        }
+        if (e.key === "Escape") closePreview();
     });
 
     const {
@@ -635,21 +848,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             await refreshApp();
         } catch (error) {
+            console.error("Session restoration error:", error);
+
             showSignedOut();
 
             message(
                 "loginMessage",
-                error.message || "Could not load your team.",
+                error.message || "Could not load your workspace.",
                 "error"
             );
         }
+    } else {
+        showSignedOut();
     }
 
-    supabaseClient.auth.onAuthStateChange(
-        (event, sessionNow) => {
-            if (event === "SIGNED_OUT" || !sessionNow) {
-                showSignedOut();
-            }
+    supabaseClient.auth.onAuthStateChange((event, sessionNow) => {
+        if (event === "SIGNED_OUT" || !sessionNow) {
+            showSignedOut();
         }
-    );
+    });
 });

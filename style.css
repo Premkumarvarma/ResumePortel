@@ -2,3 +2,86 @@
 :root{--ink:#172033;--muted:#69758a;--line:#e6eaf0;--bg:#f5f7fb;--blue:#3459db;--blue-dark:#2546bf;--green:#13835b;--red:#c13b48;--white:#fff}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",sans-serif;font-size:14px}.topbar{height:70px;background:#101827;color:white;display:flex;align-items:center;justify-content:space-between;padding:0 max(24px,calc((100% - 1180px)/2));box-shadow:0 4px 18px #10182718}.brand{display:flex;align-items:center;gap:11px;color:white;text-decoration:none;font:800 18px Manrope,sans-serif;letter-spacing:-.5px}.brand-mark{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#4568ed;color:white;font-size:12px}.user-area{display:flex;align-items:center;gap:14px;color:#dce3f4;font-size:13px}.container{max-width:1180px;margin:0 auto;padding:38px 24px 60px}.login-layout{min-height:calc(100vh - 190px);display:grid;grid-template-columns:1.2fr .8fr;align-items:center;gap:80px}.intro h1,.page-heading h1{font:800 clamp(34px,5vw,54px)/1.12 Manrope,sans-serif;letter-spacing:-2px;margin:12px 0 18px}.intro h1 span{color:var(--blue)}.muted{color:var(--muted);line-height:1.7}.intro>.muted{max-width:470px;font-size:16px}.eyebrow{font-size:10px;font-weight:700;letter-spacing:1.6px;color:var(--blue);margin:0 0 8px}.feature-list{display:grid;gap:15px;margin-top:34px;color:#344057;font-weight:600}.feature-list span{color:var(--green);margin-right:9px}.panel{background:white;border:1px solid var(--line);border-radius:16px;box-shadow:0 8px 28px #17203308}.login-card{padding:34px;max-width:440px;width:100%;justify-self:end}.login-card h2,.section-heading h2{font:700 22px Manrope,sans-serif;margin:0 0 8px;letter-spacing:-.5px}.small{font-size:12px;margin:0 0 24px}.login-card label,.field label{display:block;font-weight:600;font-size:12px;margin:15px 0 7px}input,select{font:inherit;color:var(--ink);background:white;border:1px solid #dce2eb;border-radius:9px;padding:12px 13px;min-width:0;width:100%;outline:none}input:focus,select:focus{border-color:#7890f2;box-shadow:0 0 0 3px #3459db16}input[type=file]{padding:9px;background:#fbfcfe}.button{border:0;border-radius:9px;padding:11px 16px;font:700 12px "DM Sans",sans-serif;cursor:pointer;transition:.15s}.button:disabled{opacity:.6;cursor:wait}.button-primary{background:var(--blue);color:white}.button-primary:hover{background:var(--blue-dark)}.button-secondary{background:#edf1ff;color:#2d4bc0}.button-ghost{background:#263247;color:#fff}.full{width:100%;margin-top:22px}.form-message{font-size:12px;color:var(--muted);min-height:16px;margin:8px 0 0}.form-message.error{color:var(--red)}.form-message.success{color:var(--green)}.page-heading{display:flex;align-items:end;justify-content:space-between;margin-bottom:25px}.page-heading h1{font-size:36px;letter-spacing:-1.2px;margin:5px 0}.page-heading .muted{margin:4px 0 0}.secure-label{font-size:11px;color:var(--green);font-weight:700;background:#e7f6ef;border-radius:30px;padding:8px 12px;margin-bottom:8px}.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}.stat-card{background:white;border:1px solid var(--line);border-radius:13px;padding:19px 21px}.stat-card span{display:block;color:var(--muted);font-size:12px}.stat-card strong{display:block;font:800 27px Manrope,sans-serif;margin-top:7px}.form-panel,.list-panel{padding:25px;margin-bottom:20px}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.section-heading h2{margin:0}.required-note{font-size:11px;color:var(--muted)}.candidate-form{display:grid;grid-template-columns:repeat(4,1fr);gap:5px 16px}.field-wide{grid-column:1/-1}.field label{margin-top:10px}.form-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px}.form-actions .form-message{margin:0}.toolbar{display:grid;grid-template-columns:1fr 220px;gap:12px;margin:18px 0}.table-wrap{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:900px}th{text-align:left;font-size:10px;letter-spacing:.8px;color:#7b8798;background:#f8f9fc;padding:13px 12px}td{padding:14px 12px;border-top:1px solid #edf0f4;font-size:12px;vertical-align:middle}td:first-child{font-weight:700}.file-name{color:var(--muted);max-width:145px;display:inline-block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;vertical-align:middle}.table-action{border:0;background:transparent;color:var(--blue);font:700 11px "DM Sans";cursor:pointer;padding:5px 7px}.table-action.danger{color:var(--red)}.count-pill{font:600 10px "DM Sans";color:#66738b;background:#f0f2f7;border-radius:20px;padding:5px 9px;vertical-align:middle;margin-left:6px}.empty-state{text-align:center;padding:38px 15px;color:var(--muted)}.empty-state h3{font:700 16px Manrope;color:var(--ink);margin:9px 0 4px}.empty-state p{margin:0;font-size:12px}.empty-icon{font-size:30px;color:#9aa7bb}.modal{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:20px}.modal-backdrop{position:absolute;inset:0;background:#101827b8}.modal-card{position:relative;background:white;border-radius:14px;width:min(900px,100%);height:min(88vh,850px);display:flex;flex-direction:column;overflow:hidden;box-shadow:0 20px 80px #0004}.modal-heading{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--line)}.modal-heading h2{font:700 17px Manrope;margin:0}.icon-button{border:0;background:#f0f2f7;border-radius:8px;font-size:23px;width:32px;height:32px;cursor:pointer}.preview-content{flex:1;min-height:0;background:#eef1f6}.preview-content iframe{width:100%;height:100%;border:0}.preview-note{padding:25px;color:var(--muted)}.notice{padding:15px 18px;background:#fff5dc;border:1px solid #f1d58a;border-radius:10px;margin-bottom:20px}.notice p{margin:5px 0 0;color:#66552b}footer{display:flex;justify-content:space-between;max-width:1180px;margin:0 auto;padding:0 24px 25px;color:#8b95a5;font-size:11px}[hidden]{display:none!important}
 @media(max-width:800px){.login-layout{grid-template-columns:1fr;gap:25px;padding:35px 0}.login-card{justify-self:stretch;max-width:none}.intro h1{font-size:40px}.candidate-form{grid-template-columns:repeat(2,1fr)}.page-heading{align-items:start;gap:12px;flex-direction:column}.stats-grid{gap:9px}.stat-card{padding:14px}.stat-card strong{font-size:23px}.container{padding:25px 15px 40px}.topbar{padding:0 16px}.user-area{gap:8px}.user-area span{max-width:130px;overflow:hidden;text-overflow:ellipsis}}@media(max-width:480px){.candidate-form{grid-template-columns:1fr}.field-wide{grid-column:auto}.stats-grid{grid-template-columns:1fr}.toolbar{grid-template-columns:1fr}.form-actions{align-items:stretch;flex-direction:column}.form-actions .button{width:100%}.section-heading{align-items:flex-start;flex-direction:column}.login-card{padding:24px}}
+
+
+/* =========================================
+   RESUMEVAULT - LOGIN & REGISTRATION
+========================================= */
+
+/* Registration card */
+#signupPanel {
+  width: 100%;
+  max-width: 440px;
+  justify-self: end;
+  padding: 34px;
+}
+
+#signupPanel[hidden],
+#loginCard[hidden] {
+  display: none !important;
+}
+
+/* Login and signup switch section */
+.auth-switch {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}
+
+.auth-switch p {
+  color: var(--muted);
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+
+.auth-switch .button {
+  width: 100%;
+}
+
+/* Registration form spacing */
+#signupForm label {
+  display: block;
+  font-weight: 600;
+  font-size: 12px;
+  margin: 15px 0 7px;
+}
+
+#signupForm input {
+  width: 100%;
+}
+
+#signupBtn {
+  margin-top: 22px;
+}
+
+/* Signup message */
+#signupMessage {
+  font-size: 12px;
+  color: var(--muted);
+  min-height: 16px;
+  margin: 10px 0 0;
+  line-height: 1.6;
+}
+
+#signupMessage.error {
+  color: var(--red);
+}
+
+#signupMessage.success {
+  color: var(--green);
+}
+
+/* Mobile responsive registration */
+@media (max-width: 800px) {
+  #signupPanel {
+    justify-self: stretch;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  #signupPanel {
+    padding: 24px;
+  }
+}
