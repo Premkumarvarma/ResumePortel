@@ -1,442 +1,405 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101827">
-  <meta name="description" content="ResumeVault - Secure recruiter workspace for managing candidate profiles and resumes.">
-  <title>ResumeVault | Recruiter Portal</title>
-
-  <link rel="stylesheet" href="style.css">
-
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script defer src="app.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#101a35">
+    <title>ResumeVault | Recruiter Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-  <header class="topbar">
-    <a class="brand" href="#">
-      <span class="brand-mark">RV</span>
-      <span>ResumeVault</span>
-    </a>
 
-    <div id="userArea" class="user-area" hidden>
-      <span id="userEmail"></span>
-      <button id="logoutBtn" class="button button-ghost" type="button">
-        Sign out
-      </button>
-    </div>
-  </header>
+    <!-- LOGIN / REGISTRATION -->
+    <section id="loginPanel" class="auth-page">
+        <div class="auth-background"></div>
 
-  <main class="container">
+        <div class="auth-card">
+            <div class="brand auth-brand">
+                <div class="brand-icon">RV</div>
+                <div>
+                    <h1>ResumeVault</h1>
+                    <p>Find · Manage · Hire</p>
+                </div>
+            </div>
 
-    <!-- Supabase setup notice -->
-    <section id="setupNotice" class="notice" hidden>
-      <strong>Setup required</strong>
-      <p>
-        Open <code>app.js</code> and add your Supabase project URL
-        and publishable key before using the portal.
-      </p>
+            <div id="setupNotice" class="notice" hidden>
+                Supabase configuration is missing. Please check app.js.
+            </div>
+
+            <div id="loginCard">
+                <h2>Welcome back</h2>
+                <p class="muted">Sign in to your recruitment workspace.</p>
+
+                <form id="loginForm">
+                    <label for="loginEmail">Email address</label>
+                    <input id="loginEmail" type="email" placeholder="you@example.com" required>
+
+                    <label for="loginPassword">Password</label>
+                    <input id="loginPassword" type="password" placeholder="Enter your password" required>
+
+                    <button id="loginBtn" class="primary-btn full-btn" type="submit">
+                        Sign in
+                    </button>
+                </form>
+
+                <div id="loginMessage" class="form-message"></div>
+
+                <p class="auth-switch">
+                    New to ResumeVault?
+                    <button id="showSignupBtn" class="text-btn" type="button">Create an account</button>
+                </p>
+            </div>
+
+            <div id="signupPanel" hidden>
+                <h2>Create your account</h2>
+                <p class="muted">Set up your personal recruiter workspace.</p>
+
+                <form id="signupForm">
+                    <label for="signupName">Full name</label>
+                    <input id="signupName" type="text" placeholder="Your full name" required>
+
+                    <label for="signupEmail">Email address</label>
+                    <input id="signupEmail" type="email" placeholder="you@example.com" required>
+
+                    <label for="signupPassword">Password</label>
+                    <input id="signupPassword" type="password" minlength="8" placeholder="At least 8 characters" required>
+
+                    <label for="signupConfirmPassword">Confirm password</label>
+                    <input id="signupConfirmPassword" type="password" minlength="8" placeholder="Confirm password" required>
+
+                    <button id="signupBtn" class="primary-btn full-btn" type="submit">
+                        Create account
+                    </button>
+                </form>
+
+                <div id="signupMessage" class="form-message"></div>
+
+                <p class="auth-switch">
+                    Already registered?
+                    <button id="showLoginBtn" class="text-btn" type="button">Sign in</button>
+                </p>
+            </div>
+        </div>
     </section>
 
-    <!-- LOGIN AND REGISTRATION -->
-    <section id="loginPanel" class="login-layout">
 
-      <div class="intro">
-        <p class="eyebrow">RECRUITER WORKSPACE</p>
+    <!-- MAIN APPLICATION -->
+    <div id="appShell" class="app-shell" hidden>
 
-        <h1>
-          Your talent pipeline,<br>
-          <span>all in one place.</span>
-        </h1>
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <a href="#dashboard" class="brand sidebar-brand">
+                <div class="brand-icon">RV</div>
+                <div>
+                    <h1>ResumeVault</h1>
+                    <p>Find · Manage · Hire</p>
+                </div>
+            </a>
 
-        <p class="muted">
-          Securely organize candidate profiles and resumes
-          in your own private recruiting workspace.
-        </p>
+            <nav class="side-nav">
+                <a href="#dashboard" class="nav-link active">
+                    <span class="nav-icon">⌂</span>
+                    Dashboard
+                </a>
 
-        <div class="feature-list">
-          <div><span>✓</span> Your own private candidate database</div>
-          <div><span>✓</span> Secure resume storage</div>
-          <div><span>✓</span> Search, preview and download</div>
-          <div><span>✓</span> Access your workspace anytime</div>
-        </div>
-      </div>
+                <a href="#addCandidateSection" class="nav-link">
+                    <span class="nav-icon">＋</span>
+                    Add Candidate
+                </a>
 
-      <!-- LOGIN CARD -->
-      <div class="panel login-card" id="loginCard">
+                <a href="#candidatesSection" class="nav-link">
+                    <span class="nav-icon">♙</span>
+                    My Candidates
+                </a>
 
-        <p class="eyebrow">WELCOME BACK</p>
-        <h2>Recruiter sign in</h2>
+                <button id="exportBtn" class="nav-link nav-button" type="button">
+                    <span class="nav-icon">⇩</span>
+                    Export CSV
+                </button>
+            </nav>
 
-        <p class="muted small">
-          Sign in to access your ResumeVault workspace.
-        </p>
+            <div id="userArea" class="sidebar-user" hidden>
+                <div class="avatar">R</div>
+                <div class="user-details">
+                    <span>Welcome back!</span>
+                    <strong id="userEmail">Recruiter</strong>
+                    <small><span class="online-dot"></span> Recruiter</small>
+                </div>
+            </div>
 
-        <form id="loginForm">
-
-          <label for="loginEmail">Email address</label>
-          <input
-            id="loginEmail"
-            type="email"
-            autocomplete="username"
-            placeholder="you@example.com"
-            required
-          >
-
-          <label for="loginPassword">Password</label>
-          <input
-            id="loginPassword"
-            type="password"
-            autocomplete="current-password"
-            placeholder="Your password"
-            required
-          >
-
-          <button
-            id="loginBtn"
-            class="button button-primary full"
-            type="submit"
-          >
-            Sign in
-          </button>
-
-          <p
-            id="loginMessage"
-            class="form-message"
-            role="status"
-            aria-live="polite"
-          ></p>
-        </form>
-
-        <div class="auth-switch">
-          <p>New to ResumeVault?</p>
-
-          <button
-            id="showSignupBtn"
-            class="button button-secondary full"
-            type="button"
-          >
-            Create an Account
-          </button>
-        </div>
-      </div>
-
-      <!-- REGISTRATION CARD -->
-      <div class="panel login-card" id="signupPanel" hidden>
-
-        <p class="eyebrow">GET STARTED</p>
-        <h2>Create your account</h2>
-
-        <p class="muted small">
-          Register for free and start managing your candidates.
-        </p>
-
-        <form id="signupForm">
-
-          <label for="signupName">Full name</label>
-          <input
-            id="signupName"
-            type="text"
-            maxlength="100"
-            autocomplete="name"
-            placeholder="Enter your full name"
-            required
-          >
-
-          <label for="signupEmail">Email address</label>
-          <input
-            id="signupEmail"
-            type="email"
-            autocomplete="email"
-            placeholder="you@example.com"
-            required
-          >
-
-          <label for="signupPassword">Create password</label>
-          <input
-            id="signupPassword"
-            type="password"
-            autocomplete="new-password"
-            minlength="8"
-            placeholder="Minimum 8 characters"
-            required
-          >
-
-          <label for="signupConfirmPassword">Confirm password</label>
-          <input
-            id="signupConfirmPassword"
-            type="password"
-            autocomplete="new-password"
-            minlength="8"
-            placeholder="Re-enter your password"
-            required
-          >
-
-          <button
-            id="signupBtn"
-            class="button button-primary full"
-            type="submit"
-          >
-            Create Account
-          </button>
-
-          <p
-            id="signupMessage"
-            class="form-message"
-            role="status"
-            aria-live="polite"
-          ></p>
-        </form>
-
-        <div class="auth-switch">
-          <p>Already have an account?</p>
-
-          <button
-            id="showLoginBtn"
-            class="button button-secondary full"
-            type="button"
-          >
-            Back to Login
-          </button>
-        </div>
-      </div>
-
-    </section>
-
-    <!-- APPLICATION DASHBOARD -->
-    <section id="appShell" hidden>
-
-      <div class="page-heading">
-        <div>
-          <p class="eyebrow">RECRUITER DASHBOARD</p>
-          <h1>Your talent pool</h1>
-          <p class="muted">
-            Your candidate records are private to your account.
-          </p>
-        </div>
-
-        <span class="secure-label">● Secure workspace</span>
-      </div>
-
-      <!-- DASHBOARD STATISTICS -->
-      <div class="stats-grid">
-
-        <article class="stat-card">
-          <span>Total candidates</span>
-          <strong id="totalCount">0</strong>
-        </article>
-
-        <article class="stat-card">
-          <span>Domains</span>
-          <strong id="domainCount">0</strong>
-        </article>
-
-        <article class="stat-card">
-          <span>Added in last 7 days</span>
-          <strong id="recentCount">0</strong>
-        </article>
-
-      </div>
-
-      <!-- ADD CANDIDATE -->
-      <section class="panel form-panel">
-
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">ADD TO YOUR PIPELINE</p>
-            <h2>Add a candidate</h2>
-          </div>
-
-          <span class="required-note">* Required fields</span>
-        </div>
-
-        <form id="candidateForm" class="candidate-form">
-
-          <div class="field">
-            <label for="personName">Candidate name *</label>
-            <input
-              id="personName"
-              type="text"
-              maxlength="100"
-              placeholder="e.g. Priya Sharma"
-              required
-            >
-          </div>
-
-          <div class="field">
-            <label for="domain">Domain *</label>
-            <input
-              id="domain"
-              type="text"
-              maxlength="80"
-              placeholder="e.g. Java Developer"
-              required
-            >
-          </div>
-
-          <div class="field">
-            <label for="experience">Experience *</label>
-            <input
-              id="experience"
-              type="text"
-              maxlength="40"
-              placeholder="e.g. 3 years"
-              required
-            >
-          </div>
-
-          <div class="field">
-            <label for="location">Location *</label>
-            <input
-              id="location"
-              type="text"
-              maxlength="100"
-              placeholder="e.g. Hyderabad"
-              required
-            >
-          </div>
-
-          <div class="field field-wide">
-            <label for="resumeFile">
-              Resume file (PDF, DOC or DOCX; max 15 MB) *
-            </label>
-
-            <input
-              id="resumeFile"
-              type="file"
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              required
-            >
-          </div>
-
-          <div class="form-actions field-wide">
-            <p
-              id="formMessage"
-              class="form-message"
-              role="status"
-            ></p>
-
-            <button
-              id="saveBtn"
-              class="button button-primary"
-              type="submit"
-            >
-              Save candidate
+            <button id="logoutBtn" class="logout-btn" type="button">
+                <span class="nav-icon">⇥</span>
+                Logout
             </button>
-          </div>
+        </aside>
 
-        </form>
-      </section>
 
-      <!-- CANDIDATE DATABASE -->
-      <section class="panel list-panel">
+        <!-- MAIN CONTENT -->
+        <main class="main-content" id="dashboard">
 
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">DATABASE</p>
-            <h2>
-              Saved candidates
-              <span id="resultCount" class="count-pill">
-                0 records
-              </span>
-            </h2>
-          </div>
+            <header class="topbar">
+                <div class="mobile-brand">
+                    <div class="brand-icon">RV</div>
+                    <strong>ResumeVault</strong>
+                </div>
 
-          <button
-            id="exportBtn"
-            class="button button-secondary"
-            type="button"
-          >
-            Export CSV
-          </button>
+                <div class="topbar-date">
+                    <span>▦</span>
+                    <span id="todayDate">Recruitment Workspace</span>
+                </div>
+            </header>
+
+
+            <!-- WELCOME -->
+            <section class="welcome-section">
+                <div>
+                    <span class="eyebrow">RECRUITER WORKSPACE</span>
+                    <h2>Welcome back!</h2>
+                    <p>Your recruitment workspace at a glance.</p>
+                </div>
+                <div class="welcome-chip">
+                    <span class="online-dot"></span>
+                    Workspace active
+                </div>
+            </section>
+
+
+            <!-- STATISTICS -->
+            <section class="stats-grid">
+
+                <article class="stat-card">
+                    <div class="stat-icon teal">♙</div>
+                    <div>
+                        <p>Total Candidates</p>
+                        <h3 id="totalCount">0</h3>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon purple">★</div>
+                    <div>
+                        <p>Unique Domains</p>
+                        <h3 id="domainCount">0</h3>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon blue">▦</div>
+                    <div>
+                        <p>Recent (7 days)</p>
+                        <h3 id="recentCount">0</h3>
+                    </div>
+                </article>
+
+                <article class="stat-card">
+                    <div class="stat-icon orange">▣</div>
+                    <div>
+                        <p>Your Workspace</p>
+                        <h3 class="workspace-label">Personal</h3>
+                    </div>
+                </article>
+
+            </section>
+
+
+            <!-- WELCOME / ACTION PANELS -->
+            <section class="feature-grid">
+
+                <article class="feature-card add-feature">
+                    <div class="feature-content">
+                        <div class="feature-symbol">＋</div>
+                        <div>
+                            <h3>Build your talent pipeline</h3>
+                            <p>Upload resumes and start building your candidate database.</p>
+                            <a href="#addCandidateSection" class="light-btn">
+                                Add Candidate <span>→</span>
+                            </a>
+                        </div>
+                    </div>
+                </article>
+
+                <article class="feature-card progress-feature">
+                    <div>
+                        <span class="eyebrow">YOUR RECRUITMENT</span>
+                        <h3>Hiring at a glance</h3>
+                        <p>Keep your candidate information organised in one secure workspace.</p>
+                    </div>
+                    <div class="progress-circle">
+                        <span id="progressTotal">0</span>
+                        <small>Candidates</small>
+                    </div>
+                </article>
+
+            </section>
+
+
+            <!-- ADD CANDIDATE -->
+            <section id="addCandidateSection" class="content-card">
+                <div class="section-heading">
+                    <div>
+                        <span class="eyebrow">TALENT MANAGEMENT</span>
+                        <h2>Add a Candidate</h2>
+                        <p>Save candidate information and upload their resume.</p>
+                    </div>
+                    <span class="section-symbol">＋</span>
+                </div>
+
+                <form id="candidateForm" class="candidate-form">
+
+                    <div class="form-grid">
+                        <div class="field">
+                            <label for="personName">Candidate name</label>
+                            <input id="personName" type="text" placeholder="Enter candidate name" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="domain">Domain / Job role</label>
+                            <input id="domain" type="text" placeholder="e.g. Java Developer" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="experience">Experience</label>
+                            <input id="experience" type="text" placeholder="e.g. 3–5 years" required>
+                        </div>
+
+                        <div class="field">
+                            <label for="location">Location</label>
+                            <input id="location" type="text" placeholder="e.g. Hyderabad" required>
+                        </div>
+                    </div>
+
+                    <div class="field file-field">
+                        <label for="resumeFile">Upload resume</label>
+                        <input id="resumeFile" type="file" accept=".pdf,.doc,.docx" required>
+                        <small>PDF, DOC or DOCX · Maximum file size 15 MB</small>
+                    </div>
+
+                    <div id="formMessage" class="form-message"></div>
+
+                    <button id="saveBtn" class="primary-btn" type="submit">
+                        Save Candidate <span>→</span>
+                    </button>
+
+                </form>
+            </section>
+
+
+            <!-- SAVED CANDIDATES -->
+            <section id="candidatesSection" class="content-card candidates-card">
+
+                <div class="section-heading candidates-heading">
+                    <div>
+                        <span class="eyebrow">YOUR TALENT DATABASE</span>
+                        <h2>Saved Candidates</h2>
+                        <p>Search and manage your saved resumes.</p>
+                    </div>
+                    <span id="resultCount" class="count-pill">0 records</span>
+                </div>
+
+                <div class="table-toolbar">
+                    <div class="search-box">
+                        <span>⌕</span>
+                        <input id="searchInput" type="search" placeholder="Search by name or domain...">
+                    </div>
+
+                    <select id="domainFilter" aria-label="Filter by domain">
+                        <option value="">All domains</option>
+                    </select>
+
+                    <button id="exportBtnTop" class="secondary-btn" type="button">
+                        ⇩ Export CSV
+                    </button>
+                </div>
+
+                <div class="table-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>PERSON</th>
+                                <th>DOMAIN</th>
+                                <th>EXPERIENCE</th>
+                                <th>LOCATION</th>
+                                <th>RESUME</th>
+                                <th>ADDED</th>
+                                <th>ACTIONS</th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="candidateRows"></tbody>
+                    </table>
+
+                    <div id="emptyState" class="empty-state">
+                        <div class="empty-icon">♙</div>
+                        <h3>No candidates found</h3>
+                        <p>Add your first candidate to start building your talent database.</p>
+                        <a href="#addCandidateSection" class="primary-btn">Add Candidate</a>
+                    </div>
+                </div>
+
+            </section>
+
+            <footer class="footer">
+                <span>© 2026 ResumeVault</span>
+                <span>Find · Manage · Hire</span>
+            </footer>
+
+        </main>
+    </div>
+
+
+    <!-- RESUME PREVIEW MODAL -->
+    <div id="previewModal" class="modal" hidden>
+        <div class="modal-backdrop" data-close-preview></div>
+
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="previewTitle">Resume Preview</h3>
+                <button id="closePreview" class="close-btn" type="button">×</button>
+            </div>
+            <div id="previewContent" class="preview-content"></div>
         </div>
+    </div>
 
-        <div class="toolbar">
 
-          <input
-            id="searchInput"
-            type="search"
-            placeholder="Search name, domain, experience or location..."
-            aria-label="Search candidates"
-          >
+    <!-- Supabase JS v2 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script defer src="app.js"></script>
 
-          <select
-            id="domainFilter"
-            aria-label="Filter by domain"
-          >
-            <option value="">All domains</option>
-          </select>
+    <script>
+        // Connect the second export button to the existing export function.
+        document.addEventListener("DOMContentLoaded", () => {
+            const exportTop = document.getElementById("exportBtnTop");
+            if (exportTop) {
+                exportTop.addEventListener("click", () => {
+                    if (typeof exportCsv === "function") exportCsv();
+                });
+            }
 
-        </div>
+            const date = document.getElementById("todayDate");
+            if (date) {
+                date.textContent = new Date().toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric"
+                });
+            }
 
-        <div class="table-wrap">
+            const total = document.getElementById("totalCount");
+            const progress = document.getElementById("progressTotal");
 
-          <table>
-            <thead>
-              <tr>
-                <th>PERSON</th>
-                <th>DOMAIN</th>
-                <th>EXPERIENCE</th>
-                <th>LOCATION</th>
-                <th>RESUME</th>
-                <th>ADDED</th>
-                <th>ACTIONS</th>
-              </tr>
-            </thead>
-
-            <tbody id="candidateRows"></tbody>
-          </table>
-
-        </div>
-
-        <div id="emptyState" class="empty-state">
-          <div class="empty-icon">⌕</div>
-          <h3>No candidates found</h3>
-          <p>Add a candidate or change your search.</p>
-        </div>
-
-      </section>
-    </section>
-
-  </main>
-
-  <!-- RESUME PREVIEW MODAL -->
-  <div id="previewModal" class="modal" hidden>
-
-    <div class="modal-backdrop" data-close-preview></div>
-
-    <section
-      class="modal-card"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="previewTitle"
-    >
-
-      <div class="modal-heading">
-        <h2 id="previewTitle">Resume preview</h2>
-
-        <button
-          id="closePreview"
-          class="icon-button"
-          type="button"
-          aria-label="Close preview"
-        >
-          ×
-        </button>
-      </div>
-
-      <div id="previewContent" class="preview-content"></div>
-
-    </section>
-  </div>
-
-  <!-- FOOTER -->
-  <footer>
-    <span>ResumeVault</span>
-    <span>Private recruiter workspace</span>
-  </footer>
+            if (total && progress) {
+                const observer = new MutationObserver(() => {
+                    progress.textContent = total.textContent;
+                });
+                observer.observe(total, { childList: true, characterData: true, subtree: true });
+            }
+        });
+    </script>
 
 </body>
 </html>
