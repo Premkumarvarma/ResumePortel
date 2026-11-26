@@ -1,6 +1,7 @@
 
 /*
  * ResumeVault - Supabase-connected frontend
+ * Individual recruiter data isolation.
  * Uses Supabase Publishable Key.
  * NEVER put a service_role / secret key in this file.
  */
@@ -109,7 +110,7 @@ async function loadTeam() {
     teamId = data[0].team_id;
 }
 
-/* LOAD CANDIDATES */
+/* LOAD ONLY CURRENT RECRUITER'S CANDIDATES */
 async function loadCandidates() {
     const { data, error } = await supabaseClient
         .from("candidates")
@@ -117,6 +118,7 @@ async function loadCandidates() {
             "id, name, domain, experience, location, file_name, file_path, created_at"
         )
         .eq("team_id", teamId)
+        .eq("created_by", currentUser.id)
         .order("created_at", { ascending: false });
 
     if (error) throw error;
@@ -125,6 +127,7 @@ async function loadCandidates() {
     render();
 }
 
+/* FILTER CANDIDATES */
 function filteredCandidates() {
     const term = $("searchInput").value.trim().toLowerCase();
     const domain = $("domainFilter").value;
@@ -161,17 +164,17 @@ function render() {
             <td>
                 <button class="table-action"
                     data-action="view"
-                    data-id="${c.id}"
+                    data-id="${escapeHtml(c.id)}"
                     type="button">View</button>
 
                 <button class="table-action"
                     data-action="download"
-                    data-id="${c.id}"
+                    data-id="${escapeHtml(c.id)}"
                     type="button">Download</button>
 
                 <button class="table-action danger"
                     data-action="delete"
-                    data-id="${c.id}"
+                    data-id="${escapeHtml(c.id)}"
                     type="button">Delete</button>
             </td>
         </tr>
@@ -264,9 +267,17 @@ async function login(event) {
     }
 }
 
-/* ADD CANDIDATE */
+/* ADD CANDIDATE - PRIVATE RECRUITER FOLDER */
 async function addCandidate(event) {
     event.preventDefault();
+
+    if (!currentUser || !teamId) {
+        return message(
+            "formMessage",
+            "Please sign in before adding a candidate.",
+            "error"
+        );
+    }
 
     const btn = $("saveBtn");
     const file = $("resumeFile").files[0];
@@ -307,8 +318,9 @@ async function addCandidate(event) {
     let uploadedPath = null;
 
     try {
+        // Each recruiter gets a separate Storage folder.
         const path =
-            `${teamId}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
+            `${teamId}/${currentUser.id}/${crypto.randomUUID()}-${safeFileName(file.name)}`;
 
         const { error: uploadError } =
             await supabaseClient.storage
@@ -437,12 +449,14 @@ async function deleteCandidate(candidate) {
     }
 
     try {
+        // Database RLS also restricts deletion to the current user.
         const { error: rowError } =
             await supabaseClient
                 .from("candidates")
                 .delete()
                 .eq("id", candidate.id)
-                .eq("team_id", teamId);
+                .eq("team_id", teamId)
+                .eq("created_by", currentUser.id);
 
         if (rowError) throw rowError;
 
@@ -567,13 +581,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
     }
 
-    // Create the Supabase client only once.
     supabaseClient = window.supabase.createClient(
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY
     );
 
-    // Connect application event handlers.
     $("loginForm").addEventListener("submit", login);
 
     $("candidateForm").addEventListener("submit", addCandidate);
@@ -608,7 +620,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     });
 
-    // Check existing login session.
     const {
         data: { session },
         error
@@ -634,7 +645,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
-    // Listen for logout events.
     supabaseClient.auth.onAuthStateChange(
         (event, sessionNow) => {
             if (event === "SIGNED_OUT" || !sessionNow) {
