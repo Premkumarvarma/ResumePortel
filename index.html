@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <title>ResumeVault | Recruiter Portal</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-mark">RV</span><span>ResumeVault</span></a>
+    <div id="userArea" class="user-area" hidden>
+      <span id="userEmail"></span>
+      <button id="logoutBtn" class="button button-ghost" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <section id="setupNotice" class="notice" hidden>
+      <strong>Setup required</strong>
+      <p>Open <code>app.js</code> and add your Supabase project URL and publishable key before using the portal.</p>
+    </section>
+
+    <section id="loginPanel" class="login-layout">
+      <div class="intro">
+        <p class="eyebrow">RECRUITER WORKSPACE</p>
+        <h1>Your talent pipeline,<br><span>all in one place.</span></h1>
+        <p class="muted">Securely organize candidate profiles and resumes with your recruiting team.</p>
+        <div class="feature-list">
+          <div><span>✓</span> Shared team candidate database</div>
+          <div><span>✓</span> Private resume storage</div>
+          <div><span>✓</span> Search, preview and download</div>
+        </div>
+      </div>
+      <div class="panel login-card">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2>Recruiter sign in</h2>
+        <p class="muted small">Use the email and password created for you by your administrator.</p>
+        <form id="loginForm">
+          <label for="loginEmail">Email address</label>
+          <input id="loginEmail" type="email" autocomplete="username" placeholder="you@company.com" required>
+          <label for="loginPassword">Password</label>
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="Your password" required>
+          <button id="loginBtn" class="button button-primary full" type="submit">Sign in</button>
+          <p id="loginMessage" class="form-message" role="status"></p>
+        </form>
+      </div>
+    </section>
+
+    <section id="appShell" hidden>
+      <div class="page-heading">
+        <div>
+          <p class="eyebrow">RECRUITER DASHBOARD</p>
+          <h1>Your talent pool</h1>
+          <p class="muted">Candidate records are shared with members of your team.</p>
+        </div>
+        <span class="secure-label">● Secure workspace</span>
+      </div>
+
+      <div class="stats-grid">
+        <article class="stat-card"><span>Total candidates</span><strong id="totalCount">0</strong></article>
+        <article class="stat-card"><span>Domains</span><strong id="domainCount">0</strong></article>
+        <article class="stat-card"><span>Added in last 7 days</span><strong id="recentCount">0</strong></article>
+      </div>
+
+      <section class="panel form-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">ADD TO YOUR PIPELINE</p><h2>Add a candidate</h2></div>
+          <span class="required-note">* Required fields</span>
+        </div>
+        <form id="candidateForm" class="candidate-form">
+          <div class="field">
+            <label for="personName">Candidate name *</label>
+            <input id="personName" type="text" maxlength="100" placeholder="e.g. Priya Sharma" required>
+          </div>
+          <div class="field">
+            <label for="domain">Domain *</label>
+            <input id="domain" type="text" maxlength="80" placeholder="e.g. Java Developer" required>
+          </div>
+          <div class="field">
+            <label for="experience">Experience *</label>
+            <input id="experience" type="text" maxlength="40" placeholder="e.g. 3 years" required>
+          </div>
+          <div class="field">
+            <label for="location">Location *</label>
+            <input id="location" type="text" maxlength="100" placeholder="e.g. Hyderabad" required>
+          </div>
+          <div class="field field-wide">
+            <label for="resumeFile">Resume file (PDF, DOC or DOCX; max 15 MB) *</label>
+            <input id="resumeFile" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" required>
+          </div>
+          <div class="form-actions field-wide">
+            <p id="formMessage" class="form-message" role="status"></p>
+            <button id="saveBtn" class="button button-primary" type="submit">Save candidate</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="panel list-panel">
+        <div class="section-heading">
+          <div><p class="eyebrow">DATABASE</p><h2>Saved candidates <span id="resultCount" class="count-pill">0 records</span></h2></div>
+          <button id="exportBtn" class="button button-secondary" type="button">Export CSV</button>
+        </div>
+        <div class="toolbar">
+          <input id="searchInput" type="search" placeholder="Search name, domain, experience or location..." aria-label="Search candidates">
+          <select id="domainFilter" aria-label="Filter by domain"><option value="">All domains</option></select>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>PERSON</th><th>DOMAIN</th><th>EXPERIENCE</th><th>LOCATION</th><th>RESUME</th><th>ADDED</th><th>ACTIONS</th></tr></thead>
+            <tbody id="candidateRows"></tbody>
+          </table>
+        </div>
+        <div id="emptyState" class="empty-state">
+          <div class="empty-icon">⌕</div><h3>No candidates found</h3><p>Add a candidate or change your search.</p>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="previewModal" class="modal" hidden>
+    <div class="modal-backdrop" data-close-preview></div>
+    <section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+      <div class="modal-heading"><h2 id="previewTitle">Resume preview</h2><button id="closePreview" class="icon-button" type="button" aria-label="Close preview">×</button></div>
+      <div id="previewContent" class="preview-content"></div>
+    </section>
+  </div>
+
+  <footer><span>ResumeVault</span><span>Private team workspace</span></footer>
+</body>
+</html>
